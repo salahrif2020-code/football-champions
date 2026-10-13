@@ -1,0 +1,136 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Competition {
+  id              String   @id
+  name            String
+  shortName       String?  @unique
+  country         String
+  logo            String?
+  type            String   @default("LEAGUE")
+  founded         Int?
+  currentSeason   String?
+  
+  // ✨ حقول API الجديدة
+  apiId           Int?     @unique
+  code            String?  @unique      // PL, PD, BL1, SA, FL1, CL...
+  emblem          String?                // رابط شعار البطولة
+  seasonStart     DateTime?
+  seasonEnd       DateTime?
+  currentMatchday Int?
+  lastSyncedAt    DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  teams           Team[]
+  matches         Match[]
+
+  @@map("competitions")
+}
+
+model Team {
+  id              String   @id
+  name            String
+  shortName       String?
+  country         String
+  city            String?
+  logo            String?
+  stadium         String?
+  founded         Int?
+  
+  // ✨ حقول API الجديدة
+  apiId           Int?     @unique
+  tla             String?                // ARS, RMA, FCB...
+  crest           String?                // رابط شعار الفريق
+  venue           String?                // اسم الملعب الرسمي
+  clubColors      String?
+  website         String?
+  lastSyncedAt    DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  competitionId   String
+  competition     Competition @relation(fields: [competitionId], references: [id])
+
+  players         Player[]
+  homeMatches     Match[]  @relation("HomeTeam")
+  awayMatches     Match[]  @relation("AwayTeam")
+
+  @@map("teams")
+}
+
+model Player {
+  id              String   @id
+  name            String
+  shortName       String?
+  nationality     String
+  position        String
+  number          Int?
+  dateOfBirth     DateTime?
+  height          Int?
+  weight          Int?
+  photo           String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  teamId          String
+  team            Team @relation(fields: [teamId], references: [id])
+
+  @@map("players")
+}
+
+model Match {
+  id              String   @id
+  matchDate       DateTime
+  status          String   @default("SCHEDULED")
+  matchday        Int?
+  stadium         String?
+  homeScore       Int?
+  awayScore       Int?
+  halfTimeHome    Int?
+  halfTimeAway    Int?
+  
+  // ✨ حقول API الجديدة
+  apiId           Int?     @unique       // معرّف المباراة من API
+  season          String?                // "2026/27"
+  lastSyncedAt    DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  homeTeamId      String
+  homeTeam        Team @relation("HomeTeam", fields: [homeTeamId], references: [id])
+
+  awayTeamId      String
+  awayTeam        Team @relation("AwayTeam", fields: [awayTeamId], references: [id])
+
+  competitionId   String
+  competition     Competition @relation(fields: [competitionId], references: [id])
+
+  @@map("matches")
+}
+
+// ✨ جديد: سجل المزامنة
+model SyncLog {
+  id              String   @id @default(cuid())
+  type            String   // "competitions", "teams", "matches", "standings", "scorers"
+  status          String   // "success", "failed", "partial"
+  itemsProcessed  Int      @default(0)
+  errorMessage    String?
+  duration        Int?     // milliseconds
+  createdAt       DateTime @default(now())
+
+  @@map("sync_logs")
+}
