@@ -23,7 +23,7 @@ app.use(cors({
     if (allowedOrigins.includes(origin)) return callback(null, true);
     if (origin.includes('vercel.app')) return callback(null, true);
     if (origin.includes('render.com')) return callback(null, true);
-    return callback(null, true); // للتطوير — في الإنتاج، يمكنك تقييدها
+    return callback(null, true);
   },
   credentials: true,
 }));
@@ -371,12 +371,19 @@ app.get('/api/sync/status', async (req, res) => {
 // ============================================
 // Start Server
 // ============================================
+// ⭐ ملاحظة: في Vercel، السيرفر يشتغل تلقائياً
+// لا نحتاج app.listen()
 
-app.listen(PORT, () => {
-  console.log('========================================');
-  console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`);
-  console.log(`🏆 البطولات: http://localhost:${PORT}/api/competitions`);
-  console.log(`⚽ مباريات اليوم: http://localhost:${PORT}/api/matches/today`);
-  console.log(`🔴 مباشر الآن: http://localhost:${PORT}/api/matches/live`);
-  console.log('========================================');
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log('========================================');
+    console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`);
+    console.log(`🏆 البطولات: http://localhost:${PORT}/api/competitions`);
+    console.log(`⚽ مباريات اليوم: http://localhost:${PORT}/api/matches/today`);
+    console.log(`🔴 مباشر الآن: http://localhost:${PORT}/api/matches/live`);
+    console.log('========================================');
+  });
+}
+
+// ⭐ Vercel يحتاج هذا التصدير
+module.exports = app;
